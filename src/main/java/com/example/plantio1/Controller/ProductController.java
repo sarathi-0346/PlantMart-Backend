@@ -2,80 +2,91 @@ package com.example.plantio1.Controller;
 
 import java.util.List;
 
+import com.example.plantio1.Entity.Category;
+import com.example.plantio1.Entity.Product;
+import com.example.plantio1.Repository.CategoryRepository;
+import com.example.plantio1.Services.ProductServices;
+import com.example.plantio1.Services.ProductUploadService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.example.plantio1.Entity.Product;
-import com.example.plantio1.Services.ProductServices;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:5173")
 public class ProductController {
 
     @Autowired
-    ProductServices productServices;
+    private ProductServices productServices;
+
+    @Autowired
+    private ProductUploadService productUploadService;
+
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     @GetMapping("/getAllProduct")
     public ResponseEntity<List<Product>> getAll() {
-
-        return new ResponseEntity<>(
-                productServices.getAll(),
-                HttpStatus.OK
-        );
+        return ResponseEntity.ok(productServices.getAll());
     }
 
     @GetMapping("/getByIdProduct/{id}")
     public ResponseEntity<Product> getById(@PathVariable long id) {
-
-        return new ResponseEntity<>(
-                productServices.getById(id),
-                HttpStatus.OK
-        );
+        return ResponseEntity.ok(productServices.getById(id));
     }
 
     @GetMapping("/getByNameProduct")
     public ResponseEntity<Product> getByName(@RequestParam String name) {
-
-        return new ResponseEntity<>(
-                productServices.getByName(name),
-                HttpStatus.OK
-        );
+        return ResponseEntity.ok(productServices.getByName(name));
     }
 
     @GetMapping("/searchByNameProduct")
-    public ResponseEntity<List<Product>> searchByName(@RequestParam String name) {
+    public ResponseEntity<List<Product>> searchByName(
+            @RequestParam String name) {
 
-        return new ResponseEntity<>(
-                productServices.searchByName(name),
-                HttpStatus.OK
-        );
+        return ResponseEntity.ok(productServices.searchByName(name));
     }
 
     @PostMapping("/add")
     public ResponseEntity<Product> addProduct(@RequestBody Product product) {
-
-        return new ResponseEntity<>(
-                productServices.addProduct(product),
-                HttpStatus.CREATED
-        );
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(productServices.addProduct(product));
     }
 
     @PostMapping("/addAll")
     public ResponseEntity<List<Product>> addAll(
             @RequestBody List<Product> products) {
 
-        return new ResponseEntity<>(
-                productServices.addAll(products),
-                HttpStatus.CREATED
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(productServices.addAll(products));
+    }
+
+    @PostMapping(
+            value = "/addWithImage",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<Product> addWithImage(
+            @RequestParam("name") String name,
+            @RequestParam("price") double price,
+            @RequestParam("categoryId") Long categoryId,
+            @RequestParam("placement") String placement,
+            @RequestParam("description") String description,
+            @RequestParam("image") MultipartFile image) {
+
+        Product savedProduct = productUploadService.addWithImage(
+                name,
+                price,
+                categoryId,
+                placement,
+                description,
+                image
         );
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(savedProduct);
     }
 
     @PutMapping("/update/{id}")
@@ -83,20 +94,19 @@ public class ProductController {
             @PathVariable long id,
             @RequestBody Product product) {
 
-        return new ResponseEntity<>(
-                productServices.updateProduct(id, product),
-                HttpStatus.OK
+        return ResponseEntity.ok(
+                productServices.updateProduct(id, product)
         );
     }
 
     @DeleteMapping("/deleteData/{id}")
     public ResponseEntity<String> deleteData(@PathVariable long id) {
-
         productServices.deleteData(id);
+        return ResponseEntity.ok("Product Deleted Successfully");
+    }
 
-        return new ResponseEntity<>(
-                "Product Deleted Successfully",
-                HttpStatus.OK
-        );
+    @GetMapping("/product-upload/categories")
+    public List<Category> getUploadCategories() {
+        return categoryRepository.findAll();
     }
 }
